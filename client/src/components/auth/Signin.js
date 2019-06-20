@@ -8,27 +8,24 @@ class Signin extends Component {
     email: '',
     password: '',
   }
+
   handleChange = (e) => {
     const { name, value } = e.target;
     this.setState({
       [name]: value
     })
   }
+
   handleSubmit = (e) => {
     e.preventDefault();
     console.log(this.state);
-    axios.post('/api/v1.0/users/signin', this.state)
-      .then(response => {
-        console.log(response);
-
-        const token = response.data.token;
-        localStorage.setItem('jwtToken', token);
-        this.props.history.push('/students')
-      })
-      .catch(error => console.log(error))
-
+    this.props.loginUser(this.state, this.props.history);
   }
+
   render() {
+    const { errors } = this.props;
+    console.log(this.props);
+    
     return (
       <form onSubmit={this.handleSubmit}>
         
@@ -38,6 +35,7 @@ class Signin extends Component {
             value={this.state.email}
             onChange={this.handleChange}
           />
+          <p>{errors.email}</p>
         </div>
         <div className="form-group">
           <label htmlFor="password">Password</label>
@@ -45,6 +43,7 @@ class Signin extends Component {
             value={this.state.password}
             onChange={this.handleChange}
           />
+          <p>{errors.password}</p>
         </div>
         
         <button className="btn btn-primary" type="submit">Sign In</button> {' '}

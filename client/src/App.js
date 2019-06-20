@@ -13,13 +13,13 @@ import Signin from './components/auth/Signin';
 import PrivateRoute from './components/PrivateRoute';
 import setAuthHeader from './shared/setAuthHeader';
 import jwtDecode from 'jwt-decode';
+import axios from 'axios';
 
-if (localStorage.jwtToken) {
-  setAuthHeader(localStorage.jwtToken);
-  const currentUser = jwtDecode(localStorage.jwtToken);
-  console.log(currentUser);
-  
-}
+// if (localStorage.jwtToken) {
+//   setAuthHeader(localStorage.jwtToken);
+//   const currentUser = jwtDecode(localStorage.jwtToken);
+//   console.log(currentUser);
+// }
 
 // yarn add bootstrap
 // npm install bootstrap
@@ -29,21 +29,63 @@ class App extends Component {
     auth: {
       isAuthenticated: false,
       currentUser:{}
-    }
+    },
+    errors: {}
   }
+
+  loginUser = (data, history) => {
+    axios.post('/api/v1.0/users/signin', data)
+      .then(response => {
+        console.log(response)
+        const token = response.data.token;
+        setAuthHeader(token);
+        const currentUser = jwtDecode(token);
+        localStorage.setItem('jwtToken', token);
+        this.setState({
+          auth: {
+            ...this.state.auth,
+            isAuthenticated: true,
+            currentUser: currentUser
+          }
+        })
+        history.push('/');
+      })
+      .catch(error => {
+        
+        console.log(error.response.data);
+        
+        this.setState({
+          errors: error.response.data
+        })
+      })
+  };
+
+  logoutUser = () => {
+    localStorage.removeItem('jwtToken');
+    setAuthHeader(false);
+    this.setState({
+      auth: {
+        ...this.state.auth,
+        isAuthenticated: false,
+        currentUser: {}
+      }
+    })
+    window.location.href = '/login'
+  }
+
   render() {
-    const { auth } = this.state;
+    const { auth, errors } = this.state;
     return (
       <BrowserRouter>
         <div className="container">
-          <Navbar />
+          <Navbar auth={auth} logoutUser = {this.logoutUser} />
           <Switch>
             <PrivateRoute auth={auth} path = "/add-student" component = {AddStudent} />
             <PrivateRoute auth={auth} path = "/edit/:id" component = {EditStudent} />
-            <Route path = "/students/:id" component = {StudentDetail} />
-            <Route path="/students" component={StudentList} />
+            <PrivateRoute auth={auth} path = "/students/:id" component = {StudentDetail} />
+            <PrivateRoute auth={auth} path="/students" component={StudentList} />
             <Route path="/signup" component={Signup} />
-            <Route path="/signin" component={Signin} />
+            <Route path="/signin" component={(props) => <Signin {...props} loginUser={this.loginUser} errors={errors} />} />
             <PrivateRoute auth={auth} path = "/" component = {LandingPage} />
           </Switch>
         </div>
